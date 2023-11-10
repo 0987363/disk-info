@@ -1,7 +1,11 @@
+#from prettytable import PrettyTable
 from tabulate import tabulate
 import subprocess
+#import wcwidth
 import os
 import re
+
+#tabulate.WIDE_CHARS_MODE = True
 
 directoryPath = '/dev'
 sataPattern = re.compile(r'^sd.?$')
@@ -80,13 +84,13 @@ def isHealth(line):
     match = pattern.search(line)
     if match:
         keys = line.split()
-        return keys[9]
+        return keys[9]+" Reallocated"
 
     pattern = re.compile('Percentage Used:')
     match = pattern.search(line)
     if match:
         keys = line.split()
-        return keys[2]
+        return keys[2] + " Percentage"
 
 def isPowerOnHours(line):
     pattern = r'Power_On_Hours.+\s+(\d+)$'
@@ -115,11 +119,16 @@ diskList = sorted(diskList)
 for disk in diskList:
     smartctl(disk)
 
-table = []
+tableData = []
 for item in data:
-    table.append([item["Model"], item["Serial"], item["PowerOnHours"], item["Temperature"], item["Health"]])
+    tableData.append([item["Model"], item["Serial"], item["PowerOnHours"], item["Temperature"], item["Health"]])
 
-headers = ["Model", "Serial", "Power On Hours", "Temperature", "Health"]
-print(tabulate(table, headers, tablefmt="grid"))
+tableHeader = ["Model", "Serial", "Power On Hours", "Temperature", "Health"]
+print(tabulate(tableData, tableHeader, tablefmt="grid"))
+#print(tabulate(tableData, tableHeader, tablefmt="grid", colglobalalign='left'))
 
+#table = PrettyTable()
+#table.field_names=tableHeader
+#table.add_rows(tableData)
+#print(table)
 
