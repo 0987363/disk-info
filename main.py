@@ -1,3 +1,5 @@
+#!/root/.python3/bin/python3
+
 #from prettytable import PrettyTable
 from tabulate import tabulate
 import subprocess
