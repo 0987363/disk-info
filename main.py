@@ -21,6 +21,10 @@ def decodeSataInfo(result):
     lines = str(result).splitlines()
     item = {}
     for line in lines:
+        v = detectType(line)
+        if v is not None:
+            item["Type"] = v
+
         v = isDeviceModel(line)
         if v is not None:
             item["Model"] = v
@@ -31,7 +35,7 @@ def decodeSataInfo(result):
 
         v = isPowerOnHours(line)
         if v is not None:
-            item["PowerOnHours"] = v
+            item["PowerOnHours"] = v.replace(",", "")
 
         v = isTemperature(line)
         if v is not None:
@@ -41,7 +45,32 @@ def decodeSataInfo(result):
         if v is not None:
             item["Health"] = v
 
+        v = detectRead(line)
+        if v is not None:
+            item["Read"] = v
+
+        v = detectWrite(line)
+        if v is not None:
+            item["Write"] = v
+
+
+    if "Read" not in item:
+        item["Read"] = ''
+    if "Write" not in item:
+        item["Write"] = ''
     data.append(item)
+
+def detectRead(line):
+    pattern = r'Data Units Read:.*\[(.*)\]'
+    match = re.search(pattern, line)
+    if match:
+        return match.group(1)
+
+def detectWrite(line):
+    pattern = r'Data Units Written:.*\[(.*)\]'
+    match = re.search(pattern, line)
+    if match:
+        return match.group(1)
 
 def runSmartctl(dev):
     command =f"smartctl -a {dev}"
@@ -77,6 +106,19 @@ def isTemperature(line):
     if match:
         keys = line.split()
         return keys[1]
+
+def detectType(line):
+    # SATA Version is:  SATA 3.2, 6.0 Gb/s (current: 6.0 Gb/s)
+    pattern = r'SATA Version is:\s+(.*),.*'
+    match = re.search(pattern, line)
+    if match:
+        return match.group(1)
+
+    # NVMe Version:                       1.4
+    pattern = r'NVMe Version:\s+(.*)'
+    match = re.search(pattern, line)
+    if match:
+        return 'NVMe ' + match.group(1)
 
 
 def isHealth(line):
@@ -121,9 +163,9 @@ for disk in diskList:
 
 tableData = []
 for item in data:
-    tableData.append([item["Model"], item["Serial"], item["PowerOnHours"], item["Temperature"], item["Health"]])
+    tableData.append([item["Type"], item["Model"], item["Serial"], item["PowerOnHours"], item["Temperature"], item["Health"], item["Read"], item["Write"]])
 
-tableHeader = ["Model", "Serial", "Power On Hours", "Temperature", "Health"]
+tableHeader = ["Type", "Model", "Serial", "Power On Hours", "Temperature", "Health", "Read", "Write"]
 print(tabulate(tableData, tableHeader, tablefmt="grid"))
 #print(tabulate(tableData, tableHeader, tablefmt="grid", colglobalalign='left'))
 
