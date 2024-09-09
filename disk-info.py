@@ -37,11 +37,11 @@ def decodeSataInfo(result):
 
         v = isPowerOnHours(line)
         if v is not None:
-            item["PowerOnHours"] = v.replace(",", "")
+            item["Power"] = v.replace(",", "") + ' h'
 
         v = isTemperature(line)
         if v is not None:
-            item["Temperature"] = v
+            item["Temperature"] = v + ' °C'
 
         v = isHealth(line)
         if v is not None:
@@ -54,6 +54,10 @@ def decodeSataInfo(result):
         v = detectWrite(line)
         if v is not None:
             item["Write"] = v
+
+        v = detectCapacity(line)
+        if v is not None:
+            item["Capacity"] = v
 
 
     if "Read" not in item:
@@ -70,6 +74,17 @@ def detectRead(line):
 
 def detectWrite(line):
     pattern = r'Data Units Written:.*\[(.*)\]'
+    match = re.search(pattern, line)
+    if match:
+        return match.group(1)
+
+def detectCapacity(line):
+    pattern = r'.*Capacity:.*\[(.*)\]'
+    match = re.search(pattern, line)
+    if match:
+        return match.group(1)
+
+    pattern = r'.*Capacity:.*\[(.*)\]'
     match = re.search(pattern, line)
     if match:
         return match.group(1)
@@ -134,7 +149,7 @@ def isHealth(line):
     match = pattern.search(line)
     if match:
         keys = line.split()
-        return keys[2] + " Percentage"
+        return keys[2] + "  Percentage"
 
 def isPowerOnHours(line):
     pattern = r'Power_On_Hours.+\s+(\d+)$'
@@ -163,13 +178,22 @@ diskList = sorted(diskList)
 for disk in diskList:
     smartctl(disk)
 
+
+tableHeader = ["Type", "Model", "Serial", "Capacity", "Power", "Temperature", "Health", "Read", "Write"]
+cols = ['left', 'left', 'left', 'right', 'right', 'right', 'right', 'right', 'right']
+
 tableData = []
 for item in data:
-    tableData.append([item["Type"], item["Model"], item["Serial"], item["PowerOnHours"], item["Temperature"], item["Health"], item["Read"], item["Write"]])
+    row = []
+    for header in tableHeader:
+        row.append(item[header])
+    tableData.append(row)
 
-tableHeader = ["Type", "Model", "Serial", "Power On Hours", "Temperature", "Health", "Read", "Write"]
-print(tabulate(tableData, tableHeader, tablefmt="grid"))
-#print(tabulate(tableData, tableHeader, tablefmt="grid", colglobalalign='left'))
+    #tableData.append([item["Type"], item["Model"], item["Serial"], item["Capacity"], item["Power"], item["Temperature"], item["Health"], item["Read"], item["Write"]])
+
+#tableHeader = ["Type", "Model", "Serial", "Capacity", "Power", "Temperature", "Health", "Read", "Write"]
+#print(tabulate(tableData, tableHeader, tablefmt="grid"))
+print(tabulate(tableData, tableHeader, tablefmt="grid", colalign=cols))
 
 #table = PrettyTable()
 #table.field_names=tableHeader
